@@ -1,0 +1,19 @@
+body {
+    background-color: #eeeeea;
+    color: black;
+    z-index: 10000;
+}
+header {
+    position:absolute;
+    top:0px;
+    left: 0;
+    height:10rem;
+    display: flex;
+}
+img {
+    height: 100%;
+    width:auto;
+}
+canvas {
+    background-color:#eeeeea;
+}
