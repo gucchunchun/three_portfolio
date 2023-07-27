@@ -1,23 +1,11 @@
 import * as THREE from "three";
-import gsap from "gsap";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 //reference
 //https://medium.com/@whwrd/stunning-dot-spheres-with-webgl-4b3b06592017
 
 //mouse move
-var mouse = {
-    x:undefined,
-    y:undefined,
-    xclient:undefined,
-    yclient:undefined
-}
-addEventListener("mousemove", (e) => {
-    mouse.x = e.x;
-    mouse.y = e.y;
-    mouse.xclient = e.clientX;
-    mouse.yclient = e.clientY;
-})
+
 const canvas = document.getElementById("canvas");
 
 //width & height values get
@@ -34,11 +22,11 @@ const SCENE_BACKGROUND_COLOR = 0xffffff;
 const CAMERA_FOV = 20;
 const CAMERA_NEAR = 1;
 const CAMERA_FAR = 500;
-const CAMERA_X = 0;
-const CAMERA_Y = 0;
+const CAMERA_X = -100;
+const CAMERA_Y = 100;
 const CAMERA_Z = 220;
 
-const MASK_IMAGE = "img/earthmap.png";
+const MASK_IMAGE = "img/drawing.svg";
 
 const SPHERE_RADIUS = 30;
 const SPHERE_COLOR = 0x256E93;
@@ -76,23 +64,32 @@ const spherePointToUV = (dotCenter, sphereCenter) => {
     //https://en.wikipedia.org/wiki/UV_mapping
     //https://www.google.com/search?q=atan+vs+atan2&source=lmns&bih=764&biw=1440&hl=en-GB&sa=X&ved=2ahUKEwi4iZaplaaAAxXdsCcCHdi9BIsQ_AUoAHoECAEQAA
     //https://amycoders.org/tutorials/tm_approx.html
-    //attempt1 (- pi ~ pi) => middle of the pic would be on the left side
-    // const uvX = 1 - (0.5 + Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
-    //attempt2 (0 ~ pi,-pi ~ 0)=> inside out?why
+
+
+    //-1:aunticlockwise-opening = inside would be outer side
+    //-2:clockwise-opening = outside would be outer side
+    //related to the coordinate system? Three.js is right handed
+    //https://www.evl.uic.edu/ralph/508S98/coordinates.html
+    //attempt1−1(-pi ~ pi) 
+    // const uvX = 0.5 + Math.atan2(newVector.z, newVector.x) / (Math.PI*2);
+    //attempt1-2 (pi ~ -pi) => middle of the pic would be on the left side
+    const uvX = 1 - (0.5 + Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
+    //attempt2-1 (0 ~ pi,-pi ~ 0)=> inside out?why
     // var uvX;
     // if (Math.atan2(newVector.z, newVector.x)>=0) {
     //     uvX = Math.atan2(newVector.z, newVector.x) / (Math.PI*2);
     // }else {
     //     uvX = 1 + (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
     // }
-    //attempt3 (0 ~ -pi,pi ~ 0) => left of the pic would be on the left side
+    //attempt2-2 (0 ~ -pi,pi ~ 0) => left of the pic would be on the left side
+    //この逆の理論がわからん！！！
     // var uvX;
     // if (Math.atan2(newVector.z, newVector.x)>=0) {
     //     uvX = 1 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
     // }else {
     //     uvX = -(Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
     // }
-    //attempt4(-pi/2 ~ -pi, 0~pi, 0 ~ -pi/2) => left of the pic would be on the middle(0point in vector)
+    //attempt3-1(-pi/2 ~ -pi, 0~pi, 0 ~ -pi/2) => left of the pic would be on the middle(0point in vector)
     // var uvX;
     // const atan2 = Math.atan2(newVector.z, newVector.x);
     // if (atan2 >=0) {
@@ -102,16 +99,16 @@ const spherePointToUV = (dotCenter, sphereCenter) => {
     // }else {
     //     uvX = -(Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
     // }
-    // attempt5(-pi/2 ~ -pi, pi~0, 0 ~ -pi/2) => left of the pic would be on the middle(0point in vector)
-    var uvX;
-    const atan2 = Math.atan2(newVector.z, newVector.x);
-    if (atan2 >=0) {
-        uvX = 0.75 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
-    }else if (atan2 >-Math.PI/2){
-        uvX = 0.75 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
-    }else {
-        uvX = -(Math.atan2(newVector.z, newVector.x) / (Math.PI*2)) -0.25;
-    }
+    // attempt3-2(-pi/2 ~ -pi, pi~0, 0 ~ -pi/2) => left of the pic would be on the middle(0point in vector)
+    // var uvX;
+    // const atan2 = Math.atan2(newVector.z, newVector.x);
+    // if (atan2 >=0) {
+    //     uvX = 0.75 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
+    // }else if (atan2 >-Math.PI/2){
+    //     uvX = 0.75 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
+    // }else {
+    //     uvX = -(Math.atan2(newVector.z, newVector.x) / (Math.PI*2)) -0.25;
+    // }
 
     // // console.log(uvX);
     // console.log(Math.asin(newVector.y/SPHERE_RADIUS))=console.log(Math.asin(newVector.y/1))
@@ -123,7 +120,7 @@ const spherePointToUV = (dotCenter, sphereCenter) => {
 // Utility function to sample the data of an image at a given point. Requires
 // an imageData object.
 const sampleImage = (imageData, uv) => {
-    // return imageData.data.slice(point, point + 4);
+    // 1pixcel deta = 4array
     const point =
       4 * Math.floor(uv.x * imageData.width) +
       Math.floor(uv.y * imageData.height) * (4 * imageData.width);
@@ -155,10 +152,11 @@ const renderScene = (imageData) => {
 
     //sphere
     //test "philength"
-    // const sphere = new THREE.SphereGeometry(SPHERE_RADIUS,64,64,0, Math.PI); 
-    const sphere = new THREE.SphereGeometry(SPHERE_RADIUS,64,64);
+    const sphere = new THREE.SphereGeometry(SPHERE_RADIUS,64,64, -Math.PI/2, -Math.PI/2); 
+    // const sphere = new THREE.SphereGeometry(SPHERE_RADIUS,64,64);
     const sphereMaterial = new THREE.MeshBasicMaterial({
         color: SPHERE_COLOR,
+        side: THREE.DoubleSide
     })
     
     // immediately use the texture for material creation 
@@ -167,6 +165,11 @@ const renderScene = (imageData) => {
     
     const sphereMesh = new THREE.Mesh(sphere, sphereMaterial);
     scene.add(sphereMesh);
+
+    scene.add(new THREE.Mesh(
+        new THREE.SphereGeometry(SPHERE_RADIUS/2,64,64),
+        new THREE.MeshBasicMaterial({color:0xff0000})
+    ))
 
     const dotGeometries = [];
     // Create a blank vector to be used by the dots.
@@ -248,9 +251,10 @@ const renderScene = (imageData) => {
         // }else {
         //     theta = (450+long)*Math.PI/180;
         // }
-        //this difference is made by oppisit use of theta & phi between Sphere construction and vector3
-        //Sphere = start point is "-y" direction, use "phi" (as longtitude)
+        //90degree difference is made by oppisit use of theta & phi between Sphere construction and vector3
+        //Sphere = start point is "-x" direction, use "phi" (as longtitude)
         //Vector = start point is "+z" direction, use "theta"
+        //both of them go around the sphere circumference　anticlockwise direction = right handed?
         //=>Math.PI/2=90degree difference
         //=>adjust inUV mapping
         if (lat>=0) {
@@ -270,7 +274,8 @@ const renderScene = (imageData) => {
         scene.add(mesh);
     }
 
-    add_pin(35.6762, 139.6503);
+    // add_pin(35.6762, 139.6503);
+    add_pin(0, 0);
 
     const animate = (time)=> {
         // Reduce the current timestamp to something manageable.

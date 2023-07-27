@@ -1,0 +1,376 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+}
+ /* res!default font size change */
+html {
+     font-family: 'Bebas Neue', sans-serif;
+}
+/* --white: 245,240,218; */
+:root {
+    --white: 238,238,234;
+    --black: 15,22,23;
+    --grey: 210,212,213;
+    --color-1: 27,59,61;
+    --color-2: 234,157,61;
+    --error-color: 230,77,71;
+    --px8: 0.5rem;
+    --px16: 1rem;
+    --px24: 1.5rem;
+    --px32: 2.0rem;
+    --px48: 3.0rem;
+    --px64: 4.0rem;
+    --px80: 5.0rem;
+    --px96: 6.0rem;
+    --px120: 7.5rem;
+    --px160: 10rem;
+    --px200: 12.5rem;
+  }
+
+:root .whiteB {
+    --white: 238,238,234;
+    --black: 15,22,23;
+    --grey: 210,212,213; /*do not use on anywhere you want it to be detected*/
+    --color-1: 15,22,23;
+    --color-2: 15,22,23;
+    --error-color: 15,22,23; /*put border*/
+}
+:root .blackB {
+    --white: 15,22,23;
+    --black: 255,255,255;
+    --grey: 80,90,90; /*do not use on anywhere you want it to be detected*/
+    --color-1: 255,255,255;
+    --color-2: 255,255,255;
+    --error-color: 255,255,255; /*put border*/
+}
+
+/* component */
+.button {
+    font-family: 'Bebas Neue', sans-serif;
+    color: rgb(var(--color-1));
+    letter-spacing: 0.2rem;
+    border: solid 2px rgb(var(--color-1));
+    padding: 0.5rem;
+}
+.button:hover {
+    background-color: rgba(var(--white),1);
+    scale: 1.1;
+}
+.button:checked {
+    background-color: rgba(var(--black));
+    color: rgba(var(--white));
+}
+h1 {
+    font-size: var(--px96);
+}
+h2 {
+    font-size: var(--px80);
+}
+h3 {
+    font-size: var(--px64);
+}
+h4 {
+    font-size: var(--px48);
+}
+h5 {
+    font-size: var(--px40);
+}
+p {
+    font-size: var(--px24);
+    font-family: 'Oswald', sans-serif;
+}
+body {
+    /* MATH GRID res!delete */
+    background-color: rgb(var(--white));
+    background-image: linear-gradient(rgba(var(--color-2),0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--color-2),0.3) 1px, transparent 1px);
+    background-position: -1px -1px, -1px -1px; 
+    background-size: 20px 20px, 20px 20px;
+}
+body.whiteB, body.blackB {
+    background-color: rgb(var(--white));
+    background-image: none;
+}
+
+/* header */
+header {
+    width: 100%;
+    height: var(--px160);
+    position: fixed;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+#header-logoTitle {
+    margin-left: 1rem;
+    height: 100%;
+    width: auto;
+    padding: 8px 0;
+}
+#header-logo {
+    height: 100%;
+    width: auto;
+    margin-right: 8px;
+}
+#header-title {
+    height: 100%;
+    width: auto;
+}
+#navi {
+    width:auto;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    margin-right: 5vw;
+}
+#navi li {
+    margin-left: 1rem;
+}
+#navi .button {
+    font-size: var(--px24);
+    display: inline-block;
+    width: 10rem;
+    border-radius: 1rem;
+    padding: auto;
+    text-align: center;
+}
+header.hidden {
+    transition: 0.5s;
+    top: calc(-1*var(--px160));
+}
+
+
+/* main */
+main {
+    width: 100%;
+    height:80vh;
+}
+canvas {
+    
+}
+
+footer {
+    width: 100%;
+    height: 40vh;
+}
+
+
+
+
+/* customise opening button */
+/* https://codepen.io/cyril-lamotte/pen/bGVxjOr */
+#customise_button_container {
+    position: fixed;
+    bottom: 5%;
+    right: 5%;
+    width: fit-content;
+    height: auto;
+}
+#customise_button {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: var(--px200);
+    height: auto;
+}
+#hide_customise_button {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: var(--px32);
+    height: var(--px32);
+}
+#hide_customise_button:before, #hide_customise_button::after {
+    position: absolute;
+    top: calc((var(--px32)-0.4rem)/2);
+    left: 0;
+    right: 0;
+    content: ' ';
+    height: 0.3rem;
+    width: var(--px32);
+    background-color: rgba(var(--black),0.5);  
+    border-radius: 0.2rem; 
+}
+#hide_customise_button:before {
+    transform:rotate(45deg);
+}
+#hide_customise_button:after {
+    transform: rotate(-45deg);
+}
+#hide_customise_button:hover::before, #hide_customise_button:hover::after {
+    background-color: rgba(var(--black),1);  
+}
+
+#customise_button svg {
+    /* set view point */
+    width: 100%;
+    height:auto;
+}
+.costomise-letters {
+    fill: rgba(var(--grey));
+    fill-opacity: 0.5;
+    stroke: rgba(var(--grey));
+    stroke-opacity: 0.5;
+}
+.costomise-spoon {
+    fill: rgb(var(--color-1));
+    fill-opacity: 0.8;
+}
+#customise_button:hover .costomise-letters, #customise_button:hover .costomise-spoon{
+    fill-opacity: 1;
+}
+#customise_button:hover .costomise-letters {
+    fill: rgb(var(--error-color));
+    stroke: rgb(var(--error-color));
+}
+
+#hide_customise_button:active::before, #hide_customise_button:active::after {
+    background-color: rgba(var(--error-color),1);  
+}
+#customise_button_container.hidden #hide_customise_button {
+    display: none;
+}
+#customise_button_container.hidden {
+    animation: movein 2s;
+    bottom: 20%;
+    right: calc(-1*var(--px200));
+}
+@keyframes movein {
+    0% {
+        bottom: 5%;
+        right: 5%;
+    }
+    20% {
+        transform-origin: top right;
+        transform: rotate(20deg);
+    }
+    50% {
+        bottom: 15%;
+        right: 5%;
+        transform-origin: top right;
+        transform: rotate(10deg);
+    }
+    100% {
+        bottom: 20%;
+        right: calc(-1*var(--px200));
+        transform: rotate(13deg);
+    }
+}
+
+/* customise */
+#customise {
+    width: 100vw;
+    height: 100vh;
+    /* max-height: 100vh; */
+    overflow-y: scroll;
+    background-color: rgb(var(--white));
+    color: rgb(var(--black));
+    z-index: 10000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 50px 0;
+}
+#customise-title {
+    width: 100%;
+    /* height: var(--px160); */
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+#customise-box{
+    display: flex;
+    flex-direction: column-reverse;
+    flex-wrap: wrap;
+    align-items: center;
+    width: 80%;
+}
+#customise-processbutton-box {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    margin: 30px 0;
+}
+#customise-processbutton-box button {
+    width: 40%;
+    text-align: center;
+}
+
+#customise-sections{
+    width: 100%;
+    border: solid 5px rgb(var(--black))
+}
+.customise-section {
+    width: 100%;
+    text-align: center;
+}
+.customise-section-title{
+    width: 100%;
+    position: relative;
+   text-align: bottom;
+}
+.customise-section-title::after {
+    content: "";
+    display: inline-block;
+    width: 50%;
+    height: 3px;
+    background-color: rgb(var(--black));
+    position: absolute;
+    left: 50%;
+    top: 90%;
+    transform:translateX(-50%) translateY(-50%);
+}
+.customise-options {
+    display: flex;
+    flex-direction: row;
+    margin: 30px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.customise-option-box {
+    width: 8rem;
+    padding: 2rem;
+    margin: 0 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: dotted 2px rgb(var(--black));
+}
+.customise-option-box:hover {
+    background-color: rgba(var(--grey));
+}
+.customise-option-box:has(.customise-option:checked) {
+    border: solid 2px rgb(var(--black));
+    background-color: rgba(var(--black));
+}
+.customise-option:checked + label {
+    color: rgb(var(--white));
+}
+.fontsize-label {
+    position: relative; 
+    padding-top: 2rem;
+    font-size: 1rem;
+}
+.fontsize-label::before {
+    content:"A";
+    position: absolute;
+    left: 50%;
+    transform:translateX(-50%) translateY(-100%);
+}
+#defaultF +.fontsize-label::before {
+    font-size: 24px;
+}
+#mediumF + .fontsize-label::before {
+    font-size: 32px;
+}
+#largeF +.fontsize-label::before {
+    font-size: 40px;
+}
+
+
+
