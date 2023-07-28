@@ -38,7 +38,7 @@ const grey2 = 0x505a5a;//darker
 const green = 0x1b3b3d;
 const lightGreen = 0x3C8185;
 const yellow = 0xea9d3d;
-const lightYellow = 0xFFD748;
+const lightYellow = 0xffcb8a;
 const red = 0xe64d47;
 const blue = 0x256E93; 
 let SPHERE_COLOR; 
@@ -407,8 +407,8 @@ function render() {
     // find intersections
     raycaster.setFromCamera( pointer, camera );
     intersects = raycaster.intersectObjects( scene.children, false ); //"true" = go through all children
-    // hover();
-    document.addEventListener( 'click', click );
+    hover();
+    document.addEventListener( 'dblclick', dobleclick );
     renderer.render( scene, camera );
 }
 
@@ -417,7 +417,13 @@ function hover() {
         const target = intersects[ 0 ];
         if (target.object.name !=  "sphere") {
             if (INTERSECTED) {
-                INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
+                if (INTERSECTED.name == "pin"){
+                    INTERSECTED.material.color = new THREE.Color(PIN_COLOR);
+                }else {
+                    INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
+                }
+                
+                
             }
             let tmp_color;
             switch (target.object.name){
@@ -441,12 +447,13 @@ function hover() {
     }
 }
 
-function click() {
+function dobleclick() {
     if ( intersects.length > 0 ){
         for (let intersect of intersects) {
             if (intersect.object.name == "dot"){
                 intersect.object.material.color = new THREE.Color(PIN_COLOR);
                 intersect.object.name = "pin";
+                globe.pins.push(intersect);
                 renderer.render( scene, camera );
             }
         }
