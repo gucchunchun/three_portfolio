@@ -1,0 +1,58 @@
+{
+    "users":{
+       "test":{
+          "password":"test",
+          "pin":[
+             
+          ],
+          "frined":[
+             "test2",
+             "test3",
+             "test4"
+          ],
+          "cutomise":{
+            "color":"default",
+            "fontsize":"default"
+          }
+       },
+       "test2":{
+          "password":"test2",
+          "pin":[
+             
+          ],
+          "frined":[
+             "test"
+          ],
+          "cutomise":{
+            "color":"default",
+            "fontsize":"default"
+          }
+       },
+       "test3":{
+          "password":"test3",
+          "pin":[
+             
+          ],
+          "frined":[
+             "test"
+          ],
+          "cutomise":{
+            "color":"default",
+            "fontsize":"default"
+          }
+       },
+       "test4":{
+          "password":"tes42",
+          "pin":[
+             
+          ],
+          "frined":[
+             "test"
+          ],
+          "cutomise":{
+            "color":"default",
+            "fontsize":"default"
+          }
+       }
+    }
+ }

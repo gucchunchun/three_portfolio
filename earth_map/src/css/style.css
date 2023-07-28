@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald&display=swap');
 
+input[type="text"],input[type="password"], textarea{
+    all: revert;
+ }
+ 
 * {
     margin: 0;
     padding: 0;
@@ -13,9 +17,9 @@ html {
     --white: 238,238,234;
     --black: 15,22,23;
     --grey: 210,212,213;
-    --color-1: 27,59,61;
-    --color-2: 234,157,61;
-    --error-color: 230,77,71;
+    --green: 27,59,61;
+    --yellow: 234,157,61;
+    --red: 230,77,71;
     --px8: 0.5rem;
     --px16: 1rem;
     --px24: 1.5rem;
@@ -33,35 +37,20 @@ html {
     --white: 238,238,234;
     --black: 15,22,23;
     --grey: 210,212,213; /*do not use on anywhere you want it to be detected*/
-    --color-1: 15,22,23;
-    --color-2: 15,22,23;
-    --error-color: 15,22,23; /*put border*/
+    --green: 15,22,23;
+    --yellow: 15,22,23;
+    --red: 15,22,23; /*put border*/
 }
 :root .blackB {
     --white: 15,22,23;
     --black: 255,255,255;
     --grey: 80,90,90; /*do not use on anywhere you want it to be detected*/
-    --color-1: 255,255,255;
-    --color-2: 255,255,255;
-    --error-color: 255,255,255; /*put border*/
+    --green: 255,255,255;
+    --yellow: 255,255,255;
+    --red: 255,255,255; /*put border*/
 }
 
 /* component */
-.button {
-    font-family: 'Bebas Neue', sans-serif;
-    color: rgb(var(--color-1));
-    letter-spacing: 0.2rem;
-    border: solid 2px rgb(var(--color-1));
-    padding: 0.5rem;
-}
-.button:hover {
-    background-color: rgba(var(--white),1);
-    scale: 1.1;
-}
-.button:checked {
-    background-color: rgba(var(--black));
-    color: rgba(var(--white));
-}
 h1 {
     font-size: var(--px96);
 }
@@ -81,16 +70,44 @@ p {
     font-size: var(--px24);
     font-family: 'Oswald', sans-serif;
 }
-body {
+body, .gridback {
     /* MATH GRID res!delete */
     background-color: rgb(var(--white));
-    background-image: linear-gradient(rgba(var(--color-2),0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--color-2),0.3) 1px, transparent 1px);
+    background-image: linear-gradient(rgba(var(--yellow),0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--yellow),0.3) 1px, transparent 1px);
     background-position: -1px -1px, -1px -1px; 
     background-size: 20px 20px, 20px 20px;
 }
-body.whiteB, body.blackB {
+body.whiteB, body.blackB, body.whiteB .gridback, body.blackB .gridback{
     background-color: rgb(var(--white));
     background-image: none;
+}
+.button {
+    font-family: 'Bebas Neue', sans-serif;
+    color: rgb(var(--green));
+    letter-spacing: 0.2rem;
+    border: solid 2px rgb(var(--green));
+    padding: 0.5rem;
+}
+.button:hover {
+    background-color: rgba(var(--white),1);
+}
+.button:checked {
+    background-color: rgba(var(--black));
+    color: rgba(var(--white));
+}
+.popup {
+    width: 100vw;
+    height: 100vh;
+    background-color: rgb(var(--white));
+    color: rgb(var(--black));
+    z-index: 10000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+}
+.popup.hidden {
+    display: none;
 }
 
 /* header */
@@ -102,6 +119,7 @@ header {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: space-between;
+    animation: slidein 1s;
 }
 #header-logoTitle {
     margin-left: 1rem;
@@ -136,9 +154,31 @@ header {
     padding: auto;
     text-align: center;
 }
+#navi .button:hover {
+    scale: 1.1;
+}
+
 header.hidden {
-    transition: 0.5s;
-    top: calc(-1*var(--px160));
+    top: calc(-2*var(--px160));
+    animation: slideout 1s;
+}
+@keyframes slidein {
+    from {
+        top: calc(-2*var(--px160));
+    }
+  
+    to {
+        top: 0;
+    }
+}
+@keyframes slideout {
+    from {
+        top: 0;
+    }
+  
+    to {
+        top: calc(-2*var(--px160));
+    }
 }
 
 
@@ -146,9 +186,6 @@ header.hidden {
 main {
     width: 100%;
     height:80vh;
-}
-canvas {
-    
 }
 
 footer {
@@ -161,28 +198,28 @@ footer {
 
 /* customise opening button */
 /* https://codepen.io/cyril-lamotte/pen/bGVxjOr */
-#customise_button_container {
+#customiseButton-container {
     position: fixed;
     bottom: 5%;
     right: 5%;
     width: fit-content;
     height: auto;
 }
-#customise_button {
+#customiseButton {
     position: absolute;
     bottom: 0;
     right: 0;
     width: var(--px200);
     height: auto;
 }
-#hide_customise_button {
+#hide-customiseButton {
     position: absolute;
     bottom: 0;
     right: 0;
     width: var(--px32);
     height: var(--px32);
 }
-#hide_customise_button:before, #hide_customise_button::after {
+#hide-customiseButton:before, #hide-customiseButton::after {
     position: absolute;
     top: calc((var(--px32)-0.4rem)/2);
     left: 0;
@@ -193,17 +230,17 @@ footer {
     background-color: rgba(var(--black),0.5);  
     border-radius: 0.2rem; 
 }
-#hide_customise_button:before {
+#hide-customiseButton:before {
     transform:rotate(45deg);
 }
-#hide_customise_button:after {
+#hide-customiseButton:after {
     transform: rotate(-45deg);
 }
-#hide_customise_button:hover::before, #hide_customise_button:hover::after {
+#hide-customiseButton:hover::before, #hide-customiseButton:hover::after {
     background-color: rgba(var(--black),1);  
 }
 
-#customise_button svg {
+#customiseButton-svg {
     /* set view point */
     width: 100%;
     height:auto;
@@ -215,24 +252,24 @@ footer {
     stroke-opacity: 0.5;
 }
 .costomise-spoon {
-    fill: rgb(var(--color-1));
+    fill: rgb(var(--green));
     fill-opacity: 0.8;
 }
-#customise_button:hover .costomise-letters, #customise_button:hover .costomise-spoon{
+#customiseButton:hover .costomise-letters, #customiseButton:hover .costomise-spoon{
     fill-opacity: 1;
 }
-#customise_button:hover .costomise-letters {
-    fill: rgb(var(--error-color));
-    stroke: rgb(var(--error-color));
+#customiseButton:hover .costomise-letters {
+    fill: rgb(var(--red));
+    stroke: rgb(var(--red));
 }
 
-#hide_customise_button:active::before, #hide_customise_button:active::after {
-    background-color: rgba(var(--error-color),1);  
+#hide-customiseButton:active::before, #hide-customiseButton:active::after {
+    background-color: rgba(var(--red),1);  
 }
-#customise_button_container.hidden #hide_customise_button {
+#customiseButton-container.hidden #hide-customiseButton {
     display: none;
 }
-#customise_button_container.hidden {
+#customiseButton-container.hidden {
     animation: movein 2s;
     bottom: 20%;
     right: calc(-1*var(--px200));
@@ -261,20 +298,11 @@ footer {
 
 /* customise */
 #customise {
-    width: 100vw;
-    height: 100vh;
-    /* max-height: 100vh; */
     overflow-y: scroll;
-    background-color: rgb(var(--white));
-    color: rgb(var(--black));
-    z-index: 10000;
-    position: fixed;
-    top: 0;
-    left: 0;
-    display: none;
     flex-direction: column;
     align-items: center;
     padding: 50px 0;
+    z-index: 1000000;
 }
 #customise-title {
     width: 100%;

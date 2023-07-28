@@ -1,4 +1,4 @@
-// headr size over
+// header size over
 const headerLogoTitleBox = document.getElementById("header-logoTitle");
 const headerLogo = document.getElementById("header-logo");
 const headerTitle = document.getElementById("header-title");
@@ -34,8 +34,8 @@ const mediumFOption = document.getElementById("mediumF");
 const defaultFOption = document.getElementById("defaultF");
 const defaultButton = document.getElementById("defaultButton");
 const saveButton = document.getElementById("saveButton");
-const COButtonContainer = document.getElementById("customise_button_container");
-const COButton = document.getElementById("customise_button");
+const COButtonContainer = document.getElementById("customiseButton-container");
+const COButton = document.getElementById("customiseButton");
 
 const black = "#152223";
 const white = "#ffffff";
@@ -147,18 +147,14 @@ function process_setting(event){
             colour.update_setting(defaultCOption);
         }
     }
-    customiseDiv.style.display = "none";
+    customiseDiv.classList.add("hidden");
     window.scrollTo(0,0);
 }
-function hide_cusotmiseB() {
-    COButtonContainer.classList.add("hidden");
-}
-function open_customise(){
-    customiseDiv.style.display = "flex";
-    window.scrollTo(0,0);
-}
-if (wasOpen==false){
-    open_customise();
-    isOpen=true;
-}
+
+
+//fix
+// if (wasOpen==false){
+//     open_customise();
+//     isOpen=true;
+// }
 

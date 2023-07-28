@@ -1,0 +1,476 @@
+//reference
+//https://medium.com/@whwrd/stunning-dot-spheres-with-webgl-4b3b06592017
+import * as THREE from "three";
+import gsap from "gsap";
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+//DOM
+const header = document.querySelector("header");
+const body = document.body;
+
+//!!!setting!!!
+const WINDOW_RATIO = 1;
+const canvas = document.getElementById("canvas");
+const MASK_IMAGE = "img/earthmap.png";  //detect if the pixel has colour or not, blank spot should be transparent
+
+const SCENE_ANTIALIAS = true;   //reduce noise form image and improve quality
+const SCENE_ALPHA = true;     //if the background (of canvas) has alpha channel(transparent)=>adjust in CSS background
+const SCENE_BACKGROUND_COLOR = undefined;
+
+const CAMERA_FOV = 20;
+const CAMERA_NEAR = 30; //make limitter
+const CAMERA_FAR = 500;
+const CAMERA_X = 0;
+const CAMERA_Y = 100;
+const CAMERA_Z = 300;
+
+const SPHERE_RADIUS = 30;
+const SPHERE_SEGUMENT = 64;
+const LATITUDE_COUNT = SPHERE_RADIUS * Math.PI * 2; //0.5=>DOT_SIZE=0.25
+const DOT_SIZE = 0.25;
+const DOT_DENSITY = 0.9;
+const DOT_SEGMENT = 16;
+const white = 0xeeeeea;
+const black = 0x0f1617;
+const grey1 = 0xd2d4d5;//lighter
+const grey2 = 0x505a5a;//darker
+const green = 0x1b3b3d;
+const lightGreen = 0x3C8185;
+const yellow = 0xea9d3d;
+const lightYellow = 0xFFD748;
+const red = 0xe64d47;
+const blue = 0x256E93; 
+let SPHERE_COLOR; 
+let DOT_COLOR;
+let INTERSECTED_DOT;
+let PIN_COLOR;
+let INTERSECTED_PIN;
+
+
+//colours
+function change_colour() {
+    switch (body.classList[0]){
+        case undefined:
+            SPHERE_COLOR = blue; 
+            DOT_COLOR = green;
+            INTERSECTED_DOT = lightGreen;
+            PIN_COLOR = yellow;
+            INTERSECTED_PIN = lightYellow;
+            break
+        case whiteB:
+            SPHERE_COLOR = black; 
+            DOT_COLOR = grey2;
+            INTERSECTED_DOT = white;
+            PIN_COLOR = white;
+            INTERSECTED_PIN = grey1;
+            break
+        case blackB:
+            SPHERE_COLOR = white; 
+            DOT_COLOR = grey1;
+            INTERSECTED_DOT = black;
+            PIN_COLOR = black;
+            INTERSECTED_PIN = grey2;
+            break
+    }
+}
+
+
+//Utility functions
+//  convert a dot on a sphere into a UV point on arectangular texture or image
+const spherePointToUV = (dotCenter, sphereCenter) => {
+    let newVector = new THREE.Vector3();
+    newVector.subVectors(sphereCenter, dotCenter).normalize();  //make vector length = 1
+  
+    // (0~1)=(-pi/2 ~ -pi, pi~0, 0 ~ -pi/2) clockwise-opening & 90deg difference considred 
+    let uvX;
+    const atan2 = Math.atan2(newVector.z, newVector.x);
+    if (atan2 >=0) {
+        uvX = 0.75 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
+    }else if (atan2 >-Math.PI/2){
+        uvX = 0.75 - (Math.atan2(newVector.z, newVector.x) / (Math.PI*2));
+    }else {
+        uvX = -(Math.atan2(newVector.z, newVector.x) / (Math.PI*2)) -0.25;
+    }
+    let uvY = 0.5 + Math.asin(newVector.y) / Math.PI ;
+    return new THREE.Vector2(uvX, uvY);
+};
+//  sample the data of an image at a given point. Requires an imageData object.
+const sampleImage = (imageData, uv) => {
+    // return imageData.data.slice(point, point + 4);
+    const point =
+      4 * Math.floor(uv.x * imageData.width) +
+      Math.floor(uv.y * imageData.height) * (4 * imageData.width);
+  
+    return imageData.data.slice(point, point + 4);
+};
+
+class ImageLoader {
+    constructor(image) {
+        this.image = image;
+        this.imageData = this.image_load();
+        this.image_width = undefined;
+        this.image_height = undefined;
+        this.cash ={};
+    }
+    image_load() {
+        if (this.cash && this.image in this.cash){
+            this.image_width = this.cash[this.image][1];
+            this.image_height = this.cash[this.image][2];
+            return new Promise((resolve)=>{
+                resolve(this.cash[this.image][0]);
+            })
+        }
+        //if there is no cash
+        return new Promise((resolve)=> {
+            const imageLoader = new THREE.ImageLoader();
+            imageLoader.load(this.image, (img) => {
+                const tempCanvas = document.createElement("canvas");
+                tempCanvas.width= img.width;
+                this.image_width= img.width;
+                tempCanvas.height= img.height;
+                this.image_height= img.height;
+
+                const ctx = tempCanvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                this.cash[this.image] = [imageData, img.width, img.height];
+                resolve(imageData);
+            });
+        });
+        
+    }
+}
+
+//Geometries
+class Globe {
+    constructor (canvas_width, canvas_height, scene, camera, pins = []){
+        this.width = canvas_width;
+        this.height = canvas_height;
+        this.camera = camera;
+        this.camera_fov = CAMERA_FOV;
+        this.camera_near = CAMERA_NEAR;
+        this.camera_far = CAMERA_FAR;
+        this.scene = scene;
+        this.radius = SPHERE_RADIUS;
+        this.segument = SPHERE_SEGUMENT;
+        this.sphere_mesh = undefined;
+        this.color = SPHERE_COLOR;
+        this.lat_count = LATITUDE_COUNT;
+        this.dot_size = DOT_SIZE;
+        this.dot_density  = DOT_DENSITY;
+        this.dot_segument = DOT_SEGMENT;
+        this.dot_color = DOT_COLOR;
+        this.dots ={"northern":{"east90":[],"east180":[],"west90":[],"west180":[]}, "southern":{"east90":[],"east180":[],"west90":[],"west180":[]}};
+        this.pins = pins;
+        this.pin_color = PIN_COLOR;
+        this.mask_img = new ImageLoader(MASK_IMAGE);
+    }   
+    
+    add2scene() {
+        return new Promise((resolve, reject) =>{
+            this.mask_img.imageData.then((imgData)=>{
+                if (camera==undefined){
+                    this.camera = new THREE.PerspectiveCamera(
+                    this.camera_fov,
+                    this.width / this.height,
+                    this.camera_near,
+                    this.camera_far
+                    );
+                    //controls
+                    var controls = new OrbitControls(this.camera, renderer.domElement);
+                    // Position the camera.
+                    camera.position.set(this.camera_x, this.camera_y, this.camera_z);
+                    // Update the controls (required after positioning the camera).
+                    controls.update();
+                }
+                if (this.scene==undefined) {
+                    this.scene = new THREE.Scene();
+                }
+                //earth base sphere
+                const sphere = new THREE.SphereGeometry(this.radius, this.segument, this.segument);
+                const sphere_material = new THREE.MeshBasicMaterial({
+                    color: this.color
+                })
+                this.sphere_mesh = new THREE.Mesh(sphere, sphere_material);
+                this.sphere_mesh.name = "sphere";
+                this.scene.add(this.sphere_mesh);
+            
+                //dots
+                const vector = new THREE.Vector3();
+                for (let lat = 0; lat < this.lat_count; lat += 1) {
+                    const radius =this.radius * Math.sin(Math.PI/this.lat_count*lat) ;
+                    const latitudeCircumference = radius * Math.PI * 2 * 2;
+                    const latitudeDotCount = Math.ceil(latitudeCircumference * this.dot_density)==0? 1: Math.ceil(latitudeCircumference * this.dot_density);
+                    
+                    for (let dot = 0; dot < latitudeDotCount; dot += 1) {
+                        const dotGeometry = new THREE.CircleGeometry(this.dot_size, this.dot_segument);
+                        const phi = (Math.PI / this.lat_count) * lat;
+                        const theta = ((2 * Math.PI) / latitudeDotCount) * dot;
+                        vector.setFromSphericalCoords(this.radius, phi, theta);
+                    
+                        dotGeometry.lookAt(vector);
+                        dotGeometry.translate(vector.x, vector.y, vector.z);
+                    
+                        // Find the bounding sphere of the dot.
+                        dotGeometry.computeBoundingSphere();
+                        const uv = spherePointToUV(
+                          dotGeometry.boundingSphere.center,
+                          new THREE.Vector3() //(0,0,0)
+                        );
+                        const sampledPixel = sampleImage(imgData, uv);
+                        if (sampledPixel[3] != 0) {
+                            const dotMaterial = new THREE.MeshBasicMaterial({
+                                color: DOT_COLOR,
+                            });
+                            const dotMesh =new THREE.Mesh(dotGeometry, dotMaterial);
+                            dotMesh.name = "dot";
+                            this.scene.add(dotMesh);
+                            let x = dotGeometry.boundingSphere.center.x
+                            let y = dotGeometry.boundingSphere.center.y
+                            let z = dotGeometry.boundingSphere.center.z
+                            if (0<=y) {
+                                if (0<=z) {
+                                    if (0<=x){
+                                        this.dots["northern"]["east90"].push(dotMesh);
+                                    }else {
+                                        this.dots["northern"]["west90"].push(dotMesh);
+                                    }
+                                }else {
+                                    if (0<=x){
+                                        this.dots["northern"]["east180"].push(dotMesh);
+                                    }else {
+                                        this.dots["northern"]["west180"].push(dotMesh);
+                                    }
+                                }
+                            }else {
+                                if (0<=z) {
+                                    if (0<=x){
+                                        this.dots["southern"]["east90"].push(dotMesh);
+                                    }else {
+                                        this.dots["southern"]["west90"].push(dotMesh);
+                                    }
+                                }else {
+                                    if (0<=x){
+                                        this.dots["southern"]["east180"].push(dotMesh);
+                                    }else {
+                                        this.dots["southern"]["west180"].push(dotMesh);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            resolve(this.scene);
+            reject("ERROR");
+            });
+        });
+    }
+
+    add_pin(lat, long) {
+        const vector = new THREE.Vector3();
+        let phi;
+        let theta;
+
+        if (lat>=0) {
+            phi = (90-lat)*Math.PI/180;
+        }else {
+            phi = (90+lat)*Math.PI/180;
+        }
+        if (lat>=0) {
+            theta = long*Math.PI/180;
+        }else {
+            theta = (360+long)*Math.PI/180;
+        }
+        vector.setFromSphericalCoords(this.radius, phi, theta);
+        let x = vector.x;
+        let y = vector.y;
+        let z = vector.z;
+
+        let dot_list;
+        if (0<=y) {
+            if (0<=z) {
+                if (0<=x){
+                    dot_list = this.dots["northern"]["east90"];
+                }else {
+                    dot_list = this.dots["northern"]["west90"];
+                }
+            }else {
+                if (0<=x){
+                    dot_list = this.dots["northern"]["east180"];
+                }else {
+                    dot_list = this.dots["northern"]["west180"];
+                }
+            }
+        }else {
+            if (0<=z) {
+                if (0<=x){
+                    dot_list = this.dots["southern"]["east90"];
+                }else {
+                    dot_list = this.dots["southern"]["west90"];
+                }
+            }else {
+                if (0<=x){
+                    dot_list = this.dots["southern"]["east180"];
+                }else {
+                    dot_list = this.dots["southern"]["west180"];
+                }
+            }
+        }
+        let target;
+        let min_distance = 100000;
+        for (let dot of dot_list){
+            let dotx = dot.geometry.boundingSphere.center.x;
+            let doty = dot.geometry.boundingSphere.center.y;
+            let dotz = dot.geometry.boundingSphere.center.z;
+            let distance = (x-dotx)**2 + (y-doty)**2 + (z-dotz)**2
+            if (distance<min_distance){
+                min_distance = distance;
+                target = dot;
+                if (distance==0){
+                    break
+                }
+            }
+        
+        }
+        target.material.color = new THREE.Color(this.pin_color);
+        this.pins.push(target);//we might can push with infomation
+    }
+
+}
+
+//rendering
+let w_width = window.innerWidth;
+let w_height = window.innerHeight;
+let canvas_width = w_width*WINDOW_RATIO;
+let canvas_height = w_height*WINDOW_RATIO;
+let renderer, camera, controls, scene, raycaster, globe, intersects, pointer;
+let INTERSECTED;
+function init() {
+    //renderer
+    renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: SCENE_ANTIALIAS,
+        alpha: SCENE_ALPHA
+      });
+    renderer.setSize(canvas_width, canvas_height);
+    //camera
+    camera = new THREE.PerspectiveCamera(
+        CAMERA_FOV,
+        canvas_width / canvas_height,
+        CAMERA_NEAR,
+        CAMERA_FAR
+    );
+    //controls
+    controls = new OrbitControls(camera, renderer.domElement);
+    //Position the camera.
+    camera.position.set(CAMERA_X, CAMERA_Y, CAMERA_Z);
+    //Update the controls (required after positioning the camera).
+    controls.update();
+    //scene
+    scene = new THREE.Scene();
+    //for interaction
+    raycaster = new THREE.Raycaster();
+    pointer = new THREE.Vector2();
+
+    globe =new Globe(canvas_width, canvas_height, scene, camera);
+    globe.add2scene().then(()=>{
+        renderer.render(scene,camera);
+        document.addEventListener( 'mousemove', onPointerMove );
+		window.addEventListener( 'resize', onWindowResize );
+    })
+};
+change_colour();
+init();
+animate();
+
+function onWindowResize() {
+    camera.aspect = canvas_width / canvas_height;
+    camera.updateProjectionMatrix();
+    renderer.setSize( canvas_width, canvas_height );
+}
+function onPointerMove( event ) {
+    pointer.x = ( event.clientX / canvas_width ) * 2 - 1;
+    pointer.y = - ( event.clientY / canvas_height ) * 2 + 1;
+}
+function animate() {
+    requestAnimationFrame( animate );
+
+    controls.update();
+    render();
+}
+function render() {
+    // change_colour();
+    camera.lookAt( scene.position );
+    camera.updateMatrixWorld();
+
+    // find intersections
+    raycaster.setFromCamera( pointer, camera );
+    intersects = raycaster.intersectObjects( scene.children, false ); //"true" = go through all children
+    // hover();
+    document.addEventListener( 'click', click );
+    renderer.render( scene, camera );
+}
+
+function hover() {
+    if ( intersects.length > 0 ) {
+        const target = intersects[ 0 ];
+        if (target.object.name !=  "sphere") {
+            if (INTERSECTED) {
+                INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
+            }
+            let tmp_color;
+            switch (target.object.name){
+                case "dot":
+                    tmp_color = INTERSECTED_DOT;
+                    break
+                case "pin":
+                    tmp_color = INTERSECTED_PIN;
+                    break
+            }
+            INTERSECTED = target.object;
+            INTERSECTED.currentColor = INTERSECTED.material.color;
+            target.object.material.color =  new THREE.Color(tmp_color);
+        }else if (INTERSECTED) {
+            INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
+            INTERSECTED=null;
+        }
+    }else if (INTERSECTED) {
+        INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
+        INTERSECTED=null;
+    }
+}
+
+function click() {
+    if ( intersects.length > 0 ){
+        for (let intersect of intersects) {
+            if (intersect.object.name == "dot"){
+                intersect.object.material.color = new THREE.Color(PIN_COLOR);
+                intersect.object.name = "pin";
+                renderer.render( scene, camera );
+            }
+        }
+    }
+}
+// addEventListener("click", ()=> {
+//     if ( intersects.length > 0 ){
+//         for (let intersect of intersects) {
+//             if (intersect.object.name == "dot"){
+//                 intersect.object.material.color = new THREE.Color(PIN_COLOR);
+//                 intersect.object.name = "pin";
+//             }
+            
+//         }
+//     }
+// })
+addEventListener("resize", () =>{
+    w_width = window.innerWidth;
+    w_height = window.innerHeight;
+    canvas_width = w_width * WINDOW_RATIO;
+    canvas_height = w_width * WINDOW_RATIO;
+    
+    canvas.setAttribute("width", w_width * WINDOW_RATIO);
+    canvas.setAttribute("height",w_width * WINDOW_RATIO);
+    canvas.style.width = w_width * WINDOW_RATIO + "px";
+    canvas.style.height = w_width * WINDOW_RATIO + "px";
+})

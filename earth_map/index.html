@@ -9,7 +9,7 @@
     <title>TOP:gobble globe gourmet</title>
   </head>
   <body class="">
-    <div id="customise">
+    <div id="customise" class="popup">
       <h1 id="customise-title">customise your page</h1>
       <!-- in case the user is blind -->
       <div id="customise-box">
@@ -102,11 +102,44 @@
       </div>
     </div>
     <!-- div.customise -->
-    <div id="login-box"></div>
-    <div id="customise_button_container">
-      <button id="customise_button" onclick="open_customise()">
+    <div id="login-box" class="popup gridback hidden loginbox">
+      <form action="" method="" id="login-form">
+        <h1>log in</h1>
+        <p>ID name</p>
+        <input type="text" name="id" id="login-id" />
+        <p>password</p>
+        <input type="password" name="password" id="login-pass" />
+        <button
+          class="button"
+          type="button"
+          onclick="toggle_hidden('signin-box')"
+        >
+          sign in
+        </button>
+        <button id="login-button" type="button" class="button">log in</button>
+      </form>
+    </div>
+    <div id="signin-box" class="popup gridback hidden loginbox">
+      <form action="" method="" id="signin-form">
+        <h1>sign in</h1>
+        <p>ID name</p>
+        <input type="text" name="id" id="signin-id" />
+        <p>password</p>
+        <input type="password" name="password" id="signin-pass" />
+        <button
+          class="button"
+          type="button"
+          onclick="toggle_hidden('login-box')"
+        >
+          log in
+        </button>
+        <button id="signin-button" type="button" class="button">sign in</button>
+      </form>
+    </div>
+    <div id="customiseButton-container">
+      <button id="customiseButton" onclick="toggle_hidden('customise')">
         <svg
-          id="customise_button_svg"
+          id="customiseButton-svg"
           width="934.205"
           height="685.666"
           viewBox="0 0 935 690"
@@ -143,7 +176,10 @@
           />
         </svg>
       </button>
-      <button id="hide_customise_button" onclick="hide_cusotmiseB()"></button>
+      <button
+        id="hide-customiseButton"
+        onclick="toggle_hidden('customiseButton-container')"
+      ></button>
     </div>
     <header>
       <div id="header-logoTitle">
@@ -155,10 +191,10 @@
           <a class="button" href="community.html">community</a>
         </li>
         <li>
-          <a class="button">Sign in</a>
+          <a class="button" onclick="toggle_hidden('customise')">customise</a>
         </li>
         <li>
-          <a class="button">Log in</a>
+          <a class="button" onclick="toggle_hidden('login-box')">Log in</a>
         </li>
       </ul>
     </header>
@@ -167,9 +203,11 @@
     </main>
     <footer></footer>
 
-    <script type="module" src="src/js/main.js"></script>
+    <script type="module" src="src/js/globe.js"></script>
+    <script type="module" src="src/js/backside.js"></script>
+
     <script src="src/js/responsible.js"></script>
-    <script src="src/js/submain.js"></script>
+    <script src="src/js/main.js"></script>
 
     <!-- <script type="module" src="src/tester/tester.js"></script> -->
     <!-- <script type="module" src="src/tester/problem.js"></script> -->
