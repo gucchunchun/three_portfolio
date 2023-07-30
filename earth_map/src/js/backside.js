@@ -109,7 +109,7 @@ function login_user() {
                 if (pass == data.users[id].password) {
                     alert("Hello!" + id)
                     userData = data.users[id];
-                    let info = "?=data"+id;
+                    let info = "?data="+id;
                     navi.querySelectorAll("A")[0].href += info;
                     toggle_hidden('login-box');
                 }else {
@@ -172,3 +172,4 @@ addEventListener("load", () => {
         }))
     }
 })
+

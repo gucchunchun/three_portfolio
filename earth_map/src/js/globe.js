@@ -1,16 +1,27 @@
+import * as THREE from 'three';
+import {OrbitControls} from 'https://unpkg.com/three@0.142.0/examples/jsm/controls/OrbitControls.js';
+ 
+console.log(THREE);
+console.log(OrbitControls);
+
+
+
 //reference
 //https://medium.com/@whwrd/stunning-dot-spheres-with-webgl-4b3b06592017
-import * as THREE from "three";
-import gsap from "gsap";
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
-
 //DOM
 const header = document.querySelector("header");
 const body = document.body;
+const postBox = document.getElementById("post-box");
+const customButton = document.getElementById("customiseButton-container");
+const defaultButton = document.getElementById("defaultButton");
+const saveButton = document.getElementById("saveButton");
+const countrySelect = document.getElementById("countrySelect");
+
 
 //!!!setting!!!
-const WINDOW_RATIO = 1;
+const COUNTY_JSON = "data/countries.json";
+const WINDOW_WRATIO = 1;
+const WINDOW_HRATIO = 1;
 const canvas = document.getElementById("canvas");
 const MASK_IMAGE = "img/earthmap.png";  //detect if the pixel has colour or not, blank spot should be transparent
 
@@ -18,12 +29,12 @@ const SCENE_ANTIALIAS = true;   //reduce noise form image and improve quality
 const SCENE_ALPHA = true;     //if the background (of canvas) has alpha channel(transparent)=>adjust in CSS background
 const SCENE_BACKGROUND_COLOR = undefined;
 
-const CAMERA_FOV = 20;
+const CAMERA_FOV = 15;
 const CAMERA_NEAR = 30; //make limitter
 const CAMERA_FAR = 500;
 const CAMERA_X = 0;
-const CAMERA_Y = 100;
-const CAMERA_Z = 300;
+const CAMERA_Y = 200;
+const CAMERA_Z = 230;
 
 const SPHERE_RADIUS = 30;
 const SPHERE_SEGUMENT = 64;
@@ -58,23 +69,30 @@ function change_colour() {
             PIN_COLOR = yellow;
             INTERSECTED_PIN = lightYellow;
             break
-        case whiteB:
-            SPHERE_COLOR = black; 
-            DOT_COLOR = grey2;
-            INTERSECTED_DOT = white;
-            PIN_COLOR = white;
-            INTERSECTED_PIN = grey1;
-            break
-        case blackB:
-            SPHERE_COLOR = white; 
+        case "whiteB":
+            SPHERE_COLOR = grey2; 
             DOT_COLOR = grey1;
+            INTERSECTED_DOT = grey2;
+            PIN_COLOR = black;
+            INTERSECTED_PIN = grey2;
+            break
+        case "blackB":
+            SPHERE_COLOR = grey2; 
+            DOT_COLOR = white;
             INTERSECTED_DOT = black;
             PIN_COLOR = black;
             INTERSECTED_PIN = grey2;
             break
     }
 }
-
+defaultButton.addEventListener("click",()=>{
+    change_colour();
+    init();
+});
+saveButton.addEventListener("click",()=>{
+    change_colour();
+    init();
+});
 
 //Utility functions
 //  convert a dot on a sphere into a UV point on arectangular texture or image
@@ -319,6 +337,7 @@ class Globe {
         }
         let target;
         let min_distance = 100000;
+
         for (let dot of dot_list){
             let dotx = dot.geometry.boundingSphere.center.x;
             let doty = dot.geometry.boundingSphere.center.y;
@@ -342,10 +361,12 @@ class Globe {
 //rendering
 let w_width = window.innerWidth;
 let w_height = window.innerHeight;
-let canvas_width = w_width*WINDOW_RATIO;
-let canvas_height = w_height*WINDOW_RATIO;
+let canvas_width = w_width*WINDOW_WRATIO;
+let canvas_height = w_height*WINDOW_HRATIO;
 let renderer, camera, controls, scene, raycaster, globe, intersects, pointer;
 let INTERSECTED;
+let isFocussed = false;
+let counrtyJSON;
 function init() {
     //renderer
     renderer = new THREE.WebGLRenderer({
@@ -378,6 +399,17 @@ function init() {
         renderer.render(scene,camera);
         document.addEventListener( 'mousemove', onPointerMove );
 		window.addEventListener( 'resize', onWindowResize );
+        controls.addEventListener( "change", ()=> {
+            if (-150<controls.object.position.z&&controls.object.position.z<150){
+                isFocussed = true;
+            }else if(controls.object.position.z<=-150||150<=controls.object.position.z){
+                isFocussed = false;
+            }
+        })
+        countrySelect.addEventListener("change", (e)=> {
+            let countryname = e.target.value;
+            pinat_country(countryname)
+        })
     })
 };
 change_colour();
@@ -411,9 +443,11 @@ function render() {
     document.addEventListener( 'dblclick', dobleclick );
     renderer.render( scene, camera );
 }
-
 function hover() {
     if ( intersects.length > 0 ) {
+        if (isFocussed ) {
+            map_focusmode();
+        }
         const target = intersects[ 0 ];
         if (target.object.name !=  "sphere") {
             if (INTERSECTED) {
@@ -440,13 +474,21 @@ function hover() {
         }else if (INTERSECTED) {
             INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
             INTERSECTED=null;
+        }else if(isFocussed == false){
+            header.classList.remove( "hidden" );
         }
-    }else if (INTERSECTED) {
+    }else {
+        if (INTERSECTED) {
         INTERSECTED.material.color = new THREE.Color(INTERSECTED.currentColor);
         INTERSECTED=null;
+        }
+        if(isFocussed == false){
+            header.classList.remove( "hidden" );
+            postBox.classList.add( "hidden" );
+        }
     }
-}
 
+}
 function dobleclick() {
     if ( intersects.length > 0 ){
         for (let intersect of intersects) {
@@ -459,25 +501,64 @@ function dobleclick() {
         }
     }
 }
-// addEventListener("click", ()=> {
-//     if ( intersects.length > 0 ){
-//         for (let intersect of intersects) {
-//             if (intersect.object.name == "dot"){
-//                 intersect.object.material.color = new THREE.Color(PIN_COLOR);
-//                 intersect.object.name = "pin";
-//             }
-            
-//         }
-//     }
-// })
+function load_cjson() {
+    return new Promise((resolve,reject) => {
+        if (!counrtyJSON) {
+            fetch(COUNTY_JSON)
+            .then(response => response.json())
+            .then(data => {
+                counrtyJSON = data.ref_country_codes;
+                resolve(counrtyJSON);
+                reject("error");
+            })
+        }else {
+            resolve(counrtyJSON);
+            reject("error");
+        }
+        
+    });
+}
+function pinat_country(countryname) {
+    load_cjson().then((data)=>{
+        for(let country of data){
+            if (country.country ==countryname) {
+                let lat = country.latitude
+                let long = country.longitude
+                console.log(lat)
+                globe.add_pin(lat, long)
+                break;
+            }
+        }
+    })
+}
+// function randompin() {
+//     let lat = Math.random() *180-90;
+//     let long = Math.random() *360-180;
+//     console.log(lat, long);
+//     globe.add_pin(lat,long);
+// }
+
+function map_focusmode() {
+    header.classList.add( "hidden" );
+    customButton.classList.add( "hidden" );
+    postBox.classList.remove( "hidden" );
+}
+
 addEventListener("resize", () =>{
     w_width = window.innerWidth;
     w_height = window.innerHeight;
-    canvas_width = w_width * WINDOW_RATIO;
-    canvas_height = w_width * WINDOW_RATIO;
+    canvas_width = w_width * WINDOW_WRATIO;
+    canvas_height = w_width * WINDOW_HRATIO;
     
-    canvas.setAttribute("width", w_width * WINDOW_RATIO);
-    canvas.setAttribute("height",w_width * WINDOW_RATIO);
-    canvas.style.width = w_width * WINDOW_RATIO + "px";
-    canvas.style.height = w_width * WINDOW_RATIO + "px";
+    canvas.setAttribute("width", w_width * WINDOW_WRATIO);
+    canvas.setAttribute("height",w_width * WINDOW_HRATIO);
+    canvas.style.width = w_width * WINDOW_WRATIO + "px";
+    canvas.style.height = w_width * WINDOW_HRATIO + "px";
 })
+
+countrySelect.addEventListener("change", function () {
+    const selectedValue = countrySelect.value;
+    console.log(selectedValue);
+    // Call your custom function here with the selectedValue if needed
+    // yourCustomFunction(selectedValue);
+  });
